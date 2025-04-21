@@ -1,10 +1,13 @@
+import Solutions.Solution
 import org.apache.spark.{SparkConf, SparkContext}
 
 object Utils {
 
   def reduceDataset(inputFile: String, outputFile: String, last_id: Int): Unit = {
-    val conf = new SparkConf().setAppName("DataSetReducer").
-      setMaster("local[4]")
+    val conf = new SparkConf()
+      .setAppName("DataSetReducer")
+      .set("spark.hadoop.validateOutputSpecs", "false") // Replace output folder if exists
+      .setMaster("local[4]")
 
     val allLinesBeforeId = new SparkContext(conf)
       .textFile(inputFile)
@@ -19,5 +22,26 @@ object Utils {
     val t1 = System.nanoTime()
     println("Elapsed time: " + (t1 - t0)/1000000 + "ms")
     result
+  }
+
+  def testSolution[R](block: => R): Unit = {
+    var total: Long = 0
+    for (i <- 0 to 10) {
+      val t0 = System.nanoTime()
+      block // call-by-name
+      val t1 = System.nanoTime()
+      total = total + (t1 - t0)
+    }
+
+    total = total / 10
+    println("Average Elapsed time: " + total / 1000000 + "ms")
+  }
+
+  def testAllSolutions(solutions: List[Solution], inputPath: String, outputPath: String, DEBUG: Boolean) = {
+    solutions.map( solution => {
+        println(solution.name)
+        testSolution(solution.run(inputPath, outputPath, DEBUG))
+      }
+    )
   }
 }
