@@ -30,7 +30,8 @@ object MergeTwoStages extends Solution {
     if (DEBUG) orderCombinations.foreach(println(_))
 
     val result = orderCombinations.reduceByKey((x,y) => x+y)
-    result.saveAsTextFile(outputPath)
+      .map({case ((x,y),n) => s"$x,$y,$n"})
+    result.repartition(1).saveAsTextFile(outputPath)
     if (!DEBUG) context.stop()
   }
 

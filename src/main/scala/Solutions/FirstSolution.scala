@@ -24,9 +24,12 @@ object FirstSolution extends Solution {
 
     if (DEBUG) allPurchasesWithOne.foreach(println(_))
 
-    val result = allPurchasesWithOne.reduceByKey((x, y) => x + y)
-    result.saveAsTextFile(outputPath)
-    context.stop()
+    val result = allPurchasesWithOne
+      .reduceByKey((x,y) => x+y)
+      .map({case ((x,y),n) => s"$x,$y,$n"})
+    result.repartition(1).saveAsTextFile(outputPath)
+
+    if (!DEBUG) context.stop()
   }
 
   private def csvToOrder(line: String) = {

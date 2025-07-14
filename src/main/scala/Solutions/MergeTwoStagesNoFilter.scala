@@ -1,7 +1,8 @@
 package Solutions
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
+import org.apache.hadoop.fs.{FileUtil, Path, FileSystem}
 
 object MergeTwoStagesNoFilter extends Solution {
 
@@ -9,6 +10,7 @@ object MergeTwoStagesNoFilter extends Solution {
     val conf = new SparkConf()
       .set("spark.hadoop.validateOutputSpecs", "false") // Replace output folder if exists
       .setAppName("CoPurchase")
+      .setMaster("local[4]")
 
     val context = new SparkContext(conf)
 
@@ -27,8 +29,11 @@ object MergeTwoStagesNoFilter extends Solution {
 
     if (DEBUG) orderCombinations.foreach(println(_))
 
-    val result = orderCombinations.reduceByKey((x,y) => x+y)
-    result.saveAsTextFile(outputPath)
+    val result = orderCombinations
+      .reduceByKey((x,y) => x+y)
+      .map({case ((x,y),n) => s"$x,$y,$n"})
+    result.coalesce(1).saveAsTextFile(outputPath)
+
     if (!DEBUG) context.stop()
   }
 

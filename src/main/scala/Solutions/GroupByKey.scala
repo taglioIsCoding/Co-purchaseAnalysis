@@ -19,7 +19,8 @@ object GroupByKey extends Solution {
     if (DEBUG) orders.foreach(println(_))
 
     val orderCombinations = orders.map[(Int, Iterable[(Int,Int)])](order =>
-      (order._1, order._2.flatMap(x => order._2.map(y => (y,x)).filter(product_ids => product_ids._1<product_ids._2))))
+      (order._1,
+        order._2.flatMap(x => order._2.map(y => (y,x)).filter(product_ids => product_ids._1<product_ids._2))))
 
 
     if (DEBUG) orderCombinations.foreach(println(_))
@@ -29,7 +30,8 @@ object GroupByKey extends Solution {
     if (DEBUG) allPurchasesWithOne.foreach(println(_))
 
     val result = allPurchasesWithOne.reduceByKey((x, y) => x + y)
-    result.saveAsTextFile(outputPath)
+      .map({case ((x,y),n) => s"$x,$y,$n"})
+    result.repartition(1).saveAsTextFile(outputPath)
     context.stop()
   }
 

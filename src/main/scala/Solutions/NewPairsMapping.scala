@@ -29,7 +29,8 @@ object NewPairsMapping extends Solution {
     if (DEBUG) allPurchasesWithOne.foreach(println(_))
 
     val result = allPurchasesWithOne.reduceByKey((x, y) => x + y)
-    result.saveAsTextFile(outputPath)
+      .map({case ((x,y),n) => s"$x,$y,$n"})
+    result.repartition(1).saveAsTextFile(outputPath)
     if (!DEBUG) context.stop()
   }
 
