@@ -3,6 +3,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 object Utils {
 
+  // Creates a reduced version of the dataset
   def reduceDataset(inputFile: String, outputFile: String, last_id: Int): Unit = {
     val conf = new SparkConf()
       .setAppName("DataSetReducer")
@@ -16,6 +17,7 @@ object Utils {
     allLinesBeforeId.saveAsTextFile(outputFile)
   }
 
+  // Measure the wall time clock of a block
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
     val result = block    // call-by-name
@@ -24,6 +26,7 @@ object Utils {
     result
   }
 
+  // Measure 10 times the wall time clock
   def testSolution[R](block: => R): Unit = {
     var total: Long = 0
     for (i <- 0 to 10) {
@@ -37,6 +40,7 @@ object Utils {
     println("Average Elapsed time: " + total / 1000000 + "ms")
   }
 
+  // Test each solution
   def testAllSolutions(solutions: List[Solution], inputPath: String, outputPath: String, DEBUG: Boolean) = {
     solutions.map( solution => {
         println(solution.name)

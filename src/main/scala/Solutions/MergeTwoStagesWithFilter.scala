@@ -9,7 +9,7 @@ object MergeTwoStagesWithFilter extends Solution {
     val conf = new SparkConf()
       .set("spark.hadoop.validateOutputSpecs", "false") // Replace output folder if exists
       .setAppName("CoPurchase")
-      .setMaster("local[4]")
+
     val context = new SparkContext(conf)
     context.setLogLevel("ERROR")
     val orders = context
@@ -30,7 +30,8 @@ object MergeTwoStagesWithFilter extends Solution {
     if (DEBUG) orderCombinations.foreach(println(_))
 
     val result = orderCombinations.reduceByKey((x,y) => x+y)
-    result.saveAsTextFile(outputPath)
+      .map({case ((x,y),n) => s"$x,$y,$n"})
+    result.coalesce(1).saveAsTextFile(outputPath)
     if (!DEBUG) context.stop()
   }
 

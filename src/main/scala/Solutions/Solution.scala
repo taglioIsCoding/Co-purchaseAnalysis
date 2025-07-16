@@ -1,7 +1,5 @@
 package Solutions
 
-import Solutions.MergeTwoStagesWithFilter.getClass
-
 case class Order(order_id: Int, product_id: Int)
 
 trait Solution {

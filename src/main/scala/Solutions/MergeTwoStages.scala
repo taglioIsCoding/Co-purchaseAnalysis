@@ -9,7 +9,7 @@ object MergeTwoStages extends Solution {
     val conf = new SparkConf()
       .set("spark.hadoop.validateOutputSpecs", "false") // Replace output folder if exists
       .setAppName("CoPurchase")
-      .setMaster("local[4]")
+
     val context = new SparkContext(conf)
 
     val orders = context
