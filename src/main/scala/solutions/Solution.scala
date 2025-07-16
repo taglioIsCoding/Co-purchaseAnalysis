@@ -1,4 +1,4 @@
-package Solutions
+package solutions
 
 case class Order(order_id: Int, product_id: Int)
 

@@ -1,4 +1,4 @@
-import Solutions.Solution
+import solutions.Solution
 import org.apache.spark.{SparkConf, SparkContext}
 
 object Utils {

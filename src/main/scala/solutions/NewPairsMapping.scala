@@ -1,10 +1,8 @@
-package Solutions
+package solutions
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
-import org.apache.hadoop.fs.{FileUtil, Path, FileSystem}
+import org.apache.spark.{SparkConf, SparkContext}
 
-object MergeTwoStagesNoFilter extends Solution {
+object NewPairsMapping extends Solution {
 
   def run(inputPath: String, outputPath: String, DEBUG: Boolean): Unit = {
     val conf = new SparkConf()
@@ -20,19 +18,19 @@ object MergeTwoStagesNoFilter extends Solution {
 
     if (DEBUG) orders.foreach(println(_))
 
-    val orderCombinations: RDD[((Int,Int), Int)] =
-    orders.flatMap(
-      order => order._2.flatMap(
-        x => order._2.collect({case y if y < x => ((y,x),1)}))
-    )
+    val orderCombinations = orders.map[(Int, Iterable[Any])](order =>
+      (order._1,
+        order._2.flatMap(x => order._2.map(y => if(y < x) (y,x))).filterNot(_.equals(()))))
 
     if (DEBUG) orderCombinations.foreach(println(_))
 
-    val result = orderCombinations
-      .reduceByKey((x,y) => x+y)
-      .map({case ((x,y),n) => s"$x,$y,$n"})
-    result.coalesce(1).saveAsTextFile(outputPath)
+    val allPurchasesWithOne = orderCombinations.flatMap(order => order._2.map(x => (x,1)))
 
+    if (DEBUG) allPurchasesWithOne.foreach(println(_))
+
+    val result = allPurchasesWithOne.reduceByKey((x, y) => x + y)
+      .map({case ((x,y),n) => s"$x,$y,$n"})
+    result.repartition(1).saveAsTextFile(outputPath)
     if (!DEBUG) context.stop()
   }
 

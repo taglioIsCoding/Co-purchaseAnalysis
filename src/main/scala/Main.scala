@@ -1,14 +1,10 @@
-import Solutions.{BestSolutionWithPartitions, FirstSolution, GroupByKey, MergeTwoStages, MergeTwoStagesNoFilter, NewPairsMapping}
+import solutions.{BestSolutionWithPartitions, FirstSolution, GroupByKey, MergeTwoStages, MergeTwoStagesNoFilter, NewPairsMapping}
 import Utils.reduceDataset
-
-import java.nio.file.Paths
 
 object Main {
 
-  val defaultInputPath = "src/main/resources/reduced_dataset_5k.csv"
-  val defaultOutputPath = "src/main/resources/result"
-  val defaultSolution = 5 // Best solution
   val DEBUG = false
+  val defaultNumberOfNodes = 1
 
   def main(args: Array[String]): Unit = {
 
@@ -19,14 +15,34 @@ object Main {
     //      5000 // Number of orders
     //    )
 
-    val inputPath = if (args.length >= 3) args(0)
-      else Paths.get(defaultInputPath).toAbsolutePath.toString
-    val outputPath = if (args.length >= 3) args(1)
-      else Paths.get(defaultOutputPath).toAbsolutePath.toString
-    val selectedSolution = if (args.length >= 3) args(2).toInt else defaultSolution
-    val numberOfNodes = if (args.length == 4 && selectedSolution == 5) args(3).toInt else 1
+    if (args.length < 3) {
+      println("Usage: <inputPath> <outputPath> <solutionId> <numberOfNodes>")
+      sys.exit(1)
+    }
 
-    val solutions = List(FirstSolution,GroupByKey,NewPairsMapping,MergeTwoStages,MergeTwoStagesNoFilter)
+    val inputPath = args(0)
+    val outputPath = args(1)
+
+    val selectedSolution = try {
+      args(2).toInt
+    } catch {
+      case _: NumberFormatException =>
+        println(s"Error: '${args(2)}' is not a valid integer for solutionId.")
+        sys.exit(1)
+    }
+
+    val numberOfNodes = if (args.length > 3) {
+      try {
+        args(3).toInt
+      } catch {
+        case _: NumberFormatException =>
+          println(s"Error: '${args(3)}' is not a valid integer for numberOfNodes.")
+          sys.exit(1)
+      }
+    } else {
+      defaultNumberOfNodes
+    }
+
 
     selectedSolution match {
       case 0 => Utils.time(FirstSolution.run(inputPath, outputPath, DEBUG))
@@ -35,7 +51,9 @@ object Main {
       case 3 => Utils.time(MergeTwoStages.run(inputPath, outputPath, DEBUG))
       case 4 => Utils.time(MergeTwoStagesNoFilter.run(inputPath, outputPath, DEBUG))
       case 5 => Utils.time(BestSolutionWithPartitions.run(inputPath, outputPath, DEBUG, numberOfNodes))
-      case 99 => Utils.testAllSolutions(solutions, inputPath, outputPath, DEBUG = false)
+      case _ =>
+        println(s"Error: '${args(2)}' is not a valid solutionId. The valid ones are between 0 and 5")
+        sys.exit(1)
     }
 
     if (DEBUG) System.in.read // Keep the Spark UI active

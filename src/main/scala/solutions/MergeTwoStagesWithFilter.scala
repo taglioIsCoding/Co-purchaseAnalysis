@@ -1,8 +1,9 @@
-package Solutions
+package solutions
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
-object NewPairsMapping extends Solution {
+object MergeTwoStagesWithFilter extends Solution {
 
   def run(inputPath: String, outputPath: String, DEBUG: Boolean): Unit = {
     val conf = new SparkConf()
@@ -10,7 +11,7 @@ object NewPairsMapping extends Solution {
       .setAppName("CoPurchase")
 
     val context = new SparkContext(conf)
-
+    context.setLogLevel("ERROR")
     val orders = context
       .textFile(inputPath)
       .map(csvToOrder)
@@ -18,19 +19,19 @@ object NewPairsMapping extends Solution {
 
     if (DEBUG) orders.foreach(println(_))
 
-    val orderCombinations = orders.map[(Int, Iterable[Any])](order =>
-      (order._1,
-        order._2.flatMap(x => order._2.map(y => if(y < x) (y,x))).filterNot(_.equals(()))))
+    val orderCombinations = orders.flatMap(order =>
+      for {
+        a <- order._2
+        b <- order._2
+        if a < b
+      } yield ((a,b), 1)
+    )
 
     if (DEBUG) orderCombinations.foreach(println(_))
 
-    val allPurchasesWithOne = orderCombinations.flatMap(order => order._2.map(x => (x,1)))
-
-    if (DEBUG) allPurchasesWithOne.foreach(println(_))
-
-    val result = allPurchasesWithOne.reduceByKey((x, y) => x + y)
+    val result = orderCombinations.reduceByKey((x,y) => x+y)
       .map({case ((x,y),n) => s"$x,$y,$n"})
-    result.repartition(1).saveAsTextFile(outputPath)
+    result.coalesce(1).saveAsTextFile(outputPath)
     if (!DEBUG) context.stop()
   }
 

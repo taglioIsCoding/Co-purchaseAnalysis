@@ -1,9 +1,10 @@
-package Solutions
+package solutions
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
+import org.apache.hadoop.fs.{FileUtil, Path, FileSystem}
 
-object MergeTwoStagesWithFilter extends Solution {
+object MergeTwoStagesNoFilter extends Solution {
 
   def run(inputPath: String, outputPath: String, DEBUG: Boolean): Unit = {
     val conf = new SparkConf()
@@ -11,7 +12,7 @@ object MergeTwoStagesWithFilter extends Solution {
       .setAppName("CoPurchase")
 
     val context = new SparkContext(conf)
-    context.setLogLevel("ERROR")
+
     val orders = context
       .textFile(inputPath)
       .map(csvToOrder)
@@ -19,19 +20,19 @@ object MergeTwoStagesWithFilter extends Solution {
 
     if (DEBUG) orders.foreach(println(_))
 
-    val orderCombinations = orders.flatMap(order =>
-      for {
-        a <- order._2
-        b <- order._2
-        if a < b
-      } yield ((a,b), 1)
+    val orderCombinations: RDD[((Int,Int), Int)] =
+    orders.flatMap(
+      order => order._2.flatMap(
+        x => order._2.collect({case y if y < x => ((y,x),1)}))
     )
 
     if (DEBUG) orderCombinations.foreach(println(_))
 
-    val result = orderCombinations.reduceByKey((x,y) => x+y)
+    val result = orderCombinations
+      .reduceByKey((x,y) => x+y)
       .map({case ((x,y),n) => s"$x,$y,$n"})
     result.coalesce(1).saveAsTextFile(outputPath)
+
     if (!DEBUG) context.stop()
   }
 
